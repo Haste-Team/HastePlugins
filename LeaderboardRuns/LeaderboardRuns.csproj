@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.1</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+        <HasteDir Condition=" '$(HasteDir)' == '' ">..\..\Haste\Builds\Windows</HasteDir>
+
+        <!-- We are referencing mscorlib/netstandard/etc. in the game, so disable the system framework refs -->
+        <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+        <!-- Do not generate .deps.json file (it is not needed) -->
+        <GenerateDependencyFile>false</GenerateDependencyFile>
+        <!-- Do not generate .pdb (debugging symbols) - you could ship this with your mod if you want, up to you -->
+        <DebugType>none</DebugType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Reference all DLLs in the game. If you do not actually use anything in a DLL,
+         that DLL will not get referenced in your compiled mod, so it's fine to just reference everything.
+         Private="False" means that the referenced DLLs will not get copied to the output directory. -->
+        <Reference Include="$(HasteDir)\Haste_Data\Managed\*.dll" Private="false"/>
+        <!-- Harmony -->
+        <!-- <Reference Include="C:\Program Files (x86)\Steam\steamapps\workshop\content\1796470\3385184093\*.dll" Private="false"/> -->
+    </ItemGroup>
+
+</Project>
