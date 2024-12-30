@@ -21,7 +21,7 @@
          Private="False" means that the referenced DLLs will not get copied to the output directory. -->
         <Reference Include="$(HasteDir)\Haste_Data\Managed\*.dll" Private="false"/>
         <!-- Harmony -->
-        <Reference Include="C:\Program Files (x86)\Steam\steamapps\workshop\content\1796470\3385184093\*.dll" Private="false"/>
+        <!-- <Reference Include="C:\Program Files (x86)\Steam\steamapps\workshop\content\1796470\3385184093\*.dll" Private="false"/> -->
     </ItemGroup>
 
 </Project>

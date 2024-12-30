@@ -10,9 +10,10 @@
         <GenerateDependencyFile>false</GenerateDependencyFile>
         <DebugType>none</DebugType>
     </PropertyGroup>
-
+    
     <ItemGroup>
         <Reference Include="$(HasteDir)\Haste_Data\Managed\*.dll" Private="false"/>
+        <Reference Include="Mono.Cecil.dll" />
     </ItemGroup>
 
 </Project>
