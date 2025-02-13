@@ -70,7 +70,7 @@ Sometimes, you want to modify or create a new LocalizedString. You can create a 
 
 You can specify strings for specific locales instead of a single unlocalized string via:
 
-```json
+```jsonc
 {
   "myKey": {
     "default": "hi", // used if no others match
