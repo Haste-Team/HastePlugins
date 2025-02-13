@@ -54,3 +54,43 @@ For example, this file modifies the vanilla "Golden Necklace" item to give a 100
   }
 }
 ```
+
+## Localization
+
+Sometimes, you want to modify or create a new LocalizedString. You can create a new localization table by providing a \*.localization.json file in your workshop item:
+
+`MyLocTable.localization.json`:
+
+```json
+{
+  "myKey": "hello!",
+  "anotherKey": "goodbye!"
+}
+```
+
+You can specify strings for specific locales instead of a single unlocalized string via:
+
+```json
+{
+  "myKey": {
+    "default": "hi", // used if no others match
+    "en-US": "hello",
+    "sv": "hej" // fallbacks are iteratively searched, so a user's culture of sv-SE will also try sv
+  }
+}
+```
+
+`MyLocTable.localization.json` will create a localization table called `MyLocTable`. Use it in code as `new LocalizedString("MyLocTable", "myKey")`, or in a \*.hasteitem.json like:
+
+```json
+{
+  "title": {
+    "m_TableReference": {
+      "m_TableCollectionName": "MyLocTable"
+    },
+    "m_TableEntryReference": {
+      "m_Key": "myKey"
+    }
+  }
+}
+```
