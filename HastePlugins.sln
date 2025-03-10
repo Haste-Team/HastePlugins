@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorld", "HelloWorld\HelloWorld.csproj", "{FFBA2110-790E-4EE6-B4FD-219C7A44FA63}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LeaderboardRuns", "LeaderboardRuns\LeaderboardRuns.csproj", "{671EAFAA-2485-4148-A329-CB7F09F6FE75}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LandfallSpeedrunningTools", "LandfallSpeedrunningTools\LandfallSpeedrunningTools.csproj", "{671EAFAA-2485-4148-A329-CB7F09F6FE75}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CecilExample", "CecilExample\CecilExample.csproj", "{FD5750A4-61B4-4B5F-BCD7-1D37A88C288F}"
 EndProject

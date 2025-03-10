@@ -5,14 +5,13 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
-        <HasteDir Condition=" '$(HasteDir)' == '' ">..\..\Haste\Builds\Windows</HasteDir>
+        <HasteDlls Condition=" '$(HasteDlls)' == '' ">C:\Program Files (x86)\Steam\steamapps\common\Haste\Haste_Data\Managed\*.dll</HasteDlls>
         <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
         <GenerateDependencyFile>false</GenerateDependencyFile>
-        <DebugType>none</DebugType>
     </PropertyGroup>
 
     <ItemGroup>
-        <Reference Include="$(HasteDir)\Haste_Data\Managed\*.dll" Private="false"/>
+        <Reference Include="$(HasteDlls)" Private="false"/>
     </ItemGroup>
 
 </Project>

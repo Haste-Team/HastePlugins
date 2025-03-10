@@ -1,6 +1,8 @@
-﻿using Landfall.Modding;
+﻿using Landfall.Haste;
+using Landfall.Modding;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Localization;
 using Zorro.Settings;
 
 namespace HelloWorld;
@@ -11,15 +13,17 @@ public class Program
     static Program()
     {
         Debug.Log("Hello, World!");
-        GameHandler.Instance.SettingsHandler.AddSetting(new HelloSetting());
     }
 }
 
+// The HasteSetting attribute is equivalent to
+// GameHandler.Instance.SettingsHandler.AddSetting(new HelloSetting());
+[HasteSetting]
 public class HelloSetting : FloatSetting, IExposedSetting
 {
     public override void ApplyValue() => Debug.Log($"Mod apply value {Value}");
     protected override float GetDefaultValue() => 5;
     protected override float2 GetMinMaxValue() => new(0, 10);
-    public string GetDisplayName() => "mod setting!!";
-    public SettingCategory GetCategory() => SettingCategory.Graphics;
+    public LocalizedString GetDisplayName() => new UnlocalizedString("mod setting!!");
+    public string GetCategory() => SettingCategory.General;
 }
