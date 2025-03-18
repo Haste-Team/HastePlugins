@@ -12,7 +12,9 @@ Start by looking at the HelloWorld project. HelloWorld.csproj is a nice template
 - To start developing your own mod, use the Uploader to create an empty mod (only setting title/description, for example), subscribe to it, then set the `Local override dir` to your mod's build directory.
 - Any type marked with `[LandfallPlugin]` will have its static constructor ran on mod load, after the game has booted. All mod assemblies are loaded, and THEN all static constructors are executed, hopefully resolving a lot of load order issues.
 - [Module initializers](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-9.0/module-initializers) are executed at startup by the preloader before Assembly-CSharp/etc. is loaded. `CecilPatcher.EditAssembly("Assembly-CSharp")` is a nice/easy way to edit assemblies during the preload phase in your module initializer. `CecilPatcher.Myself()` gives you a reference to yourself as a Cecil AssemblyDefinition, useful as directly referencing your patches via reflection may inadvertently load Assembly-CSharp.
-- Harmony/etc. is not shipped by the base game. If you want to use it (or any other dependency), upload Harmony as a workshop item you depend on (the community has already done this), or bundle it with your mod. Cecil *is* shipped by the base game, to support `CecilPatcher.EditAssembly`.
+- Generated hooks from MonoMod.RuntimeDetour.HookGen (i.e. MMHOOK files) are shipped in the base game by default. This allows you to patch methods using [an easy and convenient syntax](https://monomod.dev/docs/RuntimeDetour.HookGen/Usage.html).
+- MonoMod.RuntimeDetour and Mono.Cecil are also shipped with the base game, to support the generated MMHOOK files and `CecilPatcher.EditAssembly`.
+- Harmony/etc. is not shipped by the base game. If you want to use it for more advanced patching (or any other dependency), upload Harmony as a workshop item you depend on (the community has already done this), or bundle it with your mod.
 
 ## Creating custom items (no coding required)
 
