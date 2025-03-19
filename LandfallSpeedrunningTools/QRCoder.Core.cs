@@ -15,20 +15,43 @@ namespace QRCoder.Core
         private static readonly List<VersionInfo> capacityTable = CreateCapacityTable();
         private static readonly List<Antilog> galoisField = CreateAntilogTable();
 
-        public static QRCodeData GenerateQrCode(byte[] binaryData, ECCLevel eccLevel)
+        public static QRCodeData GenerateQrCodeNumeric(string plainText, ECCLevel eccLevel)
         {
-            int version = GetVersion(binaryData.Length, EncodingMode.Byte, eccLevel);
+            var encoding = EncodingMode.Numeric;
+            var codedText = PlainTextToBinaryNumeric(plainText);
+            var dataInputLength = plainText.Length;
+            var version = GetVersion(dataInputLength, encoding, eccLevel);
 
-            string modeIndicator = DecToBin((int)EncodingMode.Byte, 4);
-            string countIndicator = DecToBin(binaryData.Length, GetCountIndicatorLength(version, EncodingMode.Byte));
+            var modeIndicator = string.Empty;
+            modeIndicator += DecToBin((int)encoding, 4);
+            var countIndicator = DecToBin(dataInputLength, GetCountIndicatorLength(version, encoding));
+            var bitString = modeIndicator + countIndicator;
 
-            string bitString = modeIndicator + countIndicator;
-            foreach (byte b in binaryData)
-            {
-                bitString += DecToBin(b, 8);
-            }
+            bitString += codedText;
 
             return GenerateQrCode(bitString, eccLevel, version);
+        }
+
+        private static string PlainTextToBinaryNumeric(string plainText)
+        {
+            var codeText = string.Empty;
+            while (plainText.Length >= 3)
+            {
+                var dec = Convert.ToInt32(plainText.Substring(0, 3));
+                codeText += DecToBin(dec, 10);
+                plainText = plainText.Substring(3);
+            }
+            if (plainText.Length == 2)
+            {
+                var dec = Convert.ToInt32(plainText);
+                codeText += DecToBin(dec, 7);
+            }
+            else if (plainText.Length == 1)
+            {
+                var dec = Convert.ToInt32(plainText);
+                codeText += DecToBin(dec, 4);
+            }
+            return codeText;
         }
 
         private static QRCodeData GenerateQrCode(string bitString, ECCLevel eccLevel, int version)

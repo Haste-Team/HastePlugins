@@ -45,7 +45,7 @@ internal class SeedQRCode : MonoBehaviour
 
                 Debug.Log("SeedQRCode: enable");
 
-                var texture = GetTexture(BitConverter.GetBytes(RunHandler.RunData.currentSeed));
+                var texture = GetTexture();
                 var image = activeChild.GetComponent<Image>();
                 image.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
                 image.color = Color.white;
@@ -59,19 +59,38 @@ internal class SeedQRCode : MonoBehaviour
         }
     }
 
-    private static Texture2D GetTexture(byte[] data) => GetTexture(QRCodeGenerator.GenerateQrCode(data, QRCodeGenerator.ECCLevel.Q));
-
-    private static Texture2D GetTexture(QRCodeData codeData) => GetTexture(codeData, Color.black, Color.white);
-
-    private static Texture2D GetTexture(QRCodeData codeData, Color dark, Color light)
+    private static Texture2D GetTexture()
     {
-        var size = codeData.ModuleMatrix.Count;
-        var colors = new Color[size * size];
-        var i = 0;
-        foreach (var row in codeData.ModuleMatrix)
-            for (var x = 0; x < row.Length; x++)
-                colors[i++] = row[x] ? dark : light;
-        var texture = new Texture2D(size, size, TextureFormat.ARGB32, false)
+        var seedData = QRCodeGenerator.GenerateQrCodeNumeric(((uint)RunHandler.RunData.currentSeed).ToString(), QRCodeGenerator.ECCLevel.Q);
+        var nowData = QRCodeGenerator.GenerateQrCodeNumeric(((uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds()).ToString(), QRCodeGenerator.ECCLevel.Q);
+        var height = Mathf.Max(seedData.ModuleMatrix.Count, nowData.ModuleMatrix.Count);
+        var seedWidth = seedData.ModuleMatrix[0].Count;
+        var width = seedWidth + nowData.ModuleMatrix[0].Count;
+        var colors = new Color[width * height];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                QRCodeData data;
+                var imgX = x;
+                if (imgX > seedWidth)
+                {
+                    imgX -= seedWidth;
+                    data = nowData;
+                }
+                else
+                {
+                    data = seedData;
+                }
+                Color color;
+                if (y >= data.ModuleMatrix.Count || imgX >= data.ModuleMatrix[y].Count)
+                    color = Color.white;
+                else
+                    color = data.ModuleMatrix[y][imgX] ? Color.black : Color.white;
+                colors[y * width + x] = color;
+            }
+        }
+        var texture = new Texture2D(width, height, TextureFormat.ARGB32, false)
         {
             wrapMode = TextureWrapMode.Clamp,
             filterMode = FilterMode.Point
