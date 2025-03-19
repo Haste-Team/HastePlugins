@@ -21,13 +21,14 @@ public class SpeedrunningPlugin
 
 internal class SeedQRCode : MonoBehaviour
 {
-    private GameObject? _qrCodeHolder;
+    private bool _isTransitioning;
 
     private void Update()
     {
         var isTransitioning = UI_TransitionHandler.IsTransitioning;
-        if (isTransitioning != _qrCodeHolder)
+        if (isTransitioning != _isTransitioning)
         {
+            _isTransitioning = isTransitioning;
             if (isTransitioning)
             {
                 GameObject? GetActiveChild()
@@ -43,27 +44,17 @@ internal class SeedQRCode : MonoBehaviour
                     return;
 
                 Debug.Log("SeedQRCode: enable");
-                _qrCodeHolder = new GameObject("QR Code Holder", typeof(RectTransform), typeof(AspectRatioFitter), typeof(RawImage));
-                _qrCodeHolder.transform.SetParent(activeChild.transform, false);
-                var rectTf = (RectTransform)_qrCodeHolder.transform;
-                rectTf.anchorMin = Vector2.zero;
-                rectTf.anchorMax = Vector2.one;
-                rectTf.offsetMin = Vector2.zero;
-                rectTf.offsetMax = Vector2.zero;
+
                 var texture = GetTexture(BitConverter.GetBytes(RunHandler.RunData.currentSeed));
-                var arf = _qrCodeHolder.GetComponent<AspectRatioFitter>();
-                arf.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
-                arf.aspectRatio = (float)texture.width / texture.height;
-                var image = _qrCodeHolder.GetComponent<RawImage>();
-                image.texture = texture;
-                // var mask = activeChild.AddComponent<Mask>();
+                var image = activeChild.GetComponent<Image>();
+                image.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+                image.color = Color.white;
+                image.type = Image.Type.Simple;
+                image.preserveAspect = true;
             }
             else
             {
                 Debug.Log("SeedQRCode: disable");
-                Destroy(_qrCodeHolder!.transform.parent.gameObject.GetComponent<Mask>());
-                Destroy(_qrCodeHolder);
-                _qrCodeHolder = null;
             }
         }
     }
@@ -80,7 +71,11 @@ internal class SeedQRCode : MonoBehaviour
         foreach (var row in codeData.ModuleMatrix)
             for (var x = 0; x < row.Length; x++)
                 colors[i++] = row[x] ? dark : light;
-        var texture = new Texture2D(size, size, TextureFormat.ARGB32, false);
+        var texture = new Texture2D(size, size, TextureFormat.ARGB32, false)
+        {
+            wrapMode = TextureWrapMode.Clamp,
+            filterMode = FilterMode.Point
+        };
         texture.SetPixels(colors);
         texture.Apply();
         return texture;
