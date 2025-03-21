@@ -8,6 +8,7 @@
         <HasteDlls Condition=" '$(HasteDlls)' == '' ">C:\Program Files (x86)\Steam\steamapps\common\Haste\Haste_Data\Managed\*.dll</HasteDlls>
         <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
         <GenerateDependencyFile>false</GenerateDependencyFile>
+        <DebugType>none</DebugType>
     </PropertyGroup>
 
     <ItemGroup>
