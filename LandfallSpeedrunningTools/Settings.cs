@@ -30,42 +30,75 @@ public class FixedSeed : IntSetting, IExposedSetting
     public string GetCategory() => SpeedrunningPlugin.SpeedrunningSetting;
 }
 
-[HasteSetting]
-public class LivesplitterEnabled : BoolSetting, IExposedSetting
+public enum LivesplitterKind
 {
-    public override void ApplyValue()
+    None,
+    NamedPipe,
+}
+
+[HasteSetting]
+public class LivesplitterEnabled : EnumSetting<LivesplitterKind>, IExposedSetting
+{
+    public override async void ApplyValue()
     {
-        if (Value)
+        switch (Value)
         {
-            if (LiveSplit.Instance == null)
-            {
-                try
+            case LivesplitterKind.None:
+                if (LiveSplit.Instance is not null)
                 {
-                    LiveSplit.Instance = new LiveSplit();
+                    var inst = LiveSplit.Instance;
+                    LiveSplit.Instance = null;
+                    inst.Dispose();
                 }
-                catch (Exception e)
+                break;
+            case LivesplitterKind.NamedPipe:
+                if (LiveSplit.Instance is not LiveSplitNamedPipe)
                 {
-                    Modal.OpenModal(new DefaultHeaderModalOption("Failed to start live split client", e.ToString()), new CloseModalOnKeypress());
+                    var inst = LiveSplit.Instance;
+                    LiveSplit.Instance = null;
+                    inst?.Dispose();
+                    try
+                    {
+                        var np = new LiveSplitNamedPipe();
+                        await np.ConnectAsync();
+                        LiveSplit.Instance = np;
+                    }
+                    catch (Exception e)
+                    {
+                        Modal.OpenModal(new DefaultHeaderModalOption("Failed to start live split client", e.ToString()), new CloseModalOnKeypress());
+                    }
                 }
-            }
-        }
-        else
-        {
-            if (LiveSplit.Instance != null)
-            {
-                var inst = LiveSplit.Instance;
-                LiveSplit.Instance = null;
-                inst.Dispose();
-            }
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
     }
 
-    protected override bool GetDefaultValue() => false;
-    public override LocalizedString OffString => new UnlocalizedString("Disabled");
-    public override LocalizedString OnString => new UnlocalizedString("Enabled");
+    protected override LivesplitterKind GetDefaultValue() => LivesplitterKind.None;
+
+    public override List<LocalizedString> GetLocalizedChoices() =>
+    [
+        new UnlocalizedString("Off"),
+        new UnlocalizedString("Enabled")
+    ];
+
     public LocalizedString GetDisplayName() => new UnlocalizedString("Autosplitter for LiveSplit");
     public string GetCategory() => SpeedrunningPlugin.SpeedrunningSetting;
 }
+
+/*
+[HasteSetting]
+public class LivesplitterWebsocketPrefix : StringSetting, IExposedSetting
+{
+    public override void ApplyValue()
+    {
+    }
+
+    protected override string GetDefaultValue() => "http://*:8080/";
+    public LocalizedString GetDisplayName() => new UnlocalizedString("Websocket server listen prefix (LiveSplitCore only)");
+    public string GetCategory() => SpeedrunningPlugin.SpeedrunningSetting;
+}
+*/
 
 public abstract class SplitOnSetting : BoolSetting, IExposedSetting
 {

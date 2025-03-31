@@ -13,9 +13,28 @@ public class SpeedrunningPlugin
 
     static SpeedrunningPlugin()
     {
-        var go = new GameObject(nameof(SeedQRCode));
+        var go = new GameObject(nameof(SpeedrunningPlugin));
         Object.DontDestroyOnLoad(go);
         go.AddComponent<SeedQRCode>();
+        go.AddComponent<LiveSplitUpdater>();
+    }
+}
+
+public class LiveSplitUpdater : MonoBehaviour
+{
+    private bool isTransitioning;
+
+    private void Update()
+    {
+        var newTransitioning = UI_TransitionHandler.IsTransitioning;
+        if (isTransitioning != newTransitioning)
+        {
+            isTransitioning = newTransitioning;
+            if (isTransitioning)
+                LiveSplit.Instance?.PauseGameTime();
+            else
+                LiveSplit.Instance?.UnpauseGameTime();
+        }
     }
 }
 

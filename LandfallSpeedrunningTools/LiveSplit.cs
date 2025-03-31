@@ -4,25 +4,46 @@ using UnityEngine;
 
 namespace LandfallSpeedrunningTools;
 
-public class LiveSplit : IDisposable
+public abstract class LiveSplit : IDisposable
 {
-    private static readonly UTF8Encoding Encoding = new(false);
-    private readonly NamedPipeClientStream _stream;
+    protected static readonly UTF8Encoding Encoding = new(false);
     public static LiveSplit? Instance;
 
-    public LiveSplit()
+    protected abstract Task Send(byte[] bytes);
+
+    public void Split() => Send("startorsplit");
+    public void PauseGameTime() => Send("pausegametime");
+    public void UnpauseGameTime() => Send("unpausegametime");
+
+    private async void Send(string command)
     {
-        _stream = new NamedPipeClientStream(".", "LiveSplit", PipeDirection.InOut, PipeOptions.Asynchronous);
-        _stream.Connect(1000);
-        RecvLoop();
+        Debug.Log($"Sending command to LiveSplit: {command}");
+        await Send(Encoding.GetBytes(command + Environment.NewLine));
+        Debug.Log($"Done sending command to LiveSplit: {command}");
     }
 
-    private async void RecvLoop()
+    public abstract void Dispose();
+}
+
+public class LiveSplitNamedPipe : LiveSplit
+{
+    private readonly NamedPipeClientStream _stream;
+
+    public LiveSplitNamedPipe() => _stream = new NamedPipeClientStream(".", "LiveSplit", PipeDirection.InOut, PipeOptions.Asynchronous);
+
+    public async Task ConnectAsync()
+    {
+        await _stream.ConnectAsync(1000);
+        RecvLoop(_stream);
+        Debug.Log("LiveSplit client connected");
+    }
+
+    private static async void RecvLoop(Stream stream)
     {
         byte[] buf = new byte[1024];
-        while (_stream.CanRead)
+        while (stream.CanRead)
         {
-            var count = await _stream.ReadAsync(buf, 0, buf.Length);
+            var count = await stream.ReadAsync(buf, 0, buf.Length);
             if (count <= 0)
                 break;
             Debug.Log($"Got data from LiveSplit: {Encoding.GetString(buf, 0, count)}");
@@ -31,22 +52,86 @@ public class LiveSplit : IDisposable
         Debug.Log("LiveSplit stream closed");
     }
 
-    public void Split()
+    protected override async Task Send(byte[] arr)
     {
-        Send($"startorsplit{Environment.NewLine}");
-    }
-
-    public async void Send(string command)
-    {
-        Debug.Log("Sending split to LiveSplit");
-        var arr = Encoding.GetBytes(command);
         await _stream.WriteAsync(arr, 0, arr.Length);
         await _stream.FlushAsync();
-        Debug.Log("Done sending split to LiveSplit");
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
-        _stream?.Dispose();
+        _stream.Dispose();
     }
 }
+
+/*
+public class LiveSplitWebSocketServer : LiveSplit
+{
+    private readonly List<WebSocket> _websockets = [];
+
+    public LiveSplitWebSocketServer(string prefix)
+    {
+        HttpListener listener = new HttpListener();
+        listener.Prefixes.Add(prefix);
+        listener.Start();
+        RecvLoop(listener);
+    }
+
+    private static async void RecvLoop(WebSocket stream)
+    {
+        byte[] buf = new byte[1024];
+        while (stream.State == WebSocketState.Open)
+        {
+            var result = await stream.ReceiveAsync(new ArraySegment<byte>(buf, 0, buf.Length), CancellationToken.None);
+            Debug.Log($"Got data from LiveSplit websocket: {Encoding.GetString(buf, 0, result.Count)}");
+        }
+
+        Debug.Log("LiveSplit websocket stream closed");
+    }
+
+    private async void RecvLoop(HttpListener listener)
+    {
+        Debug.Log("Websocket server started");
+        while (true)
+        {
+            var context = await listener.GetContextAsync();
+            Debug.Log($"Got http request: is websocket={context.Request.IsWebSocketRequest} ({context.Request.GetType().FullName})");
+            if (context.Request.IsWebSocketRequest)
+            {
+                var websocketContext = await context.AcceptWebSocketAsync(null);
+                Debug.Log("Accepted new websocket client");
+                var websocket = websocketContext.WebSocket;
+                _websockets.Add(websocket);
+                RecvLoop(websocket);
+            }
+        }
+    }
+
+    protected override async Task Send(byte[] arr)
+    {
+        List<WebSocket>? toRemove = null;
+        foreach (var socket in _websockets)
+        {
+            if (socket.State != WebSocketState.Open)
+            {
+                Debug.Log($"Socket disconnected ({socket.State}). Removing from clients.");
+                toRemove ??= [];
+                toRemove.Add(socket);
+            }
+            else
+                await socket.SendAsync(new ArraySegment<byte>(arr, 0, arr.Length), WebSocketMessageType.Text, endOfMessage: true, CancellationToken.None);
+        }
+        if (toRemove != null)
+        {
+            foreach (var sock in toRemove)
+            {
+                _websockets.Remove(sock);
+            }
+        }
+    }
+
+    public override void Dispose()
+    {
+    }
+}
+*/
