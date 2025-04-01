@@ -61,7 +61,14 @@ For example, this file modifies the vanilla "Golden Necklace" item to give a 100
 
 ## Localization
 
-Sometimes, you want to modify or create a new LocalizedString. You can create a new localization table by providing a \*.localization.json file in your workshop item:
+Sometimes, you want to modify or create a new LocalizedString. The easy way to do so in code is via `UnlocalizedString`:
+
+```csharp
+// UnlocalizedString has an implicit conversion to LocalizedString
+LocalizedString = new UnlocalizedString("my text that will be displayed in all locales");
+```
+
+You can also create a new localization table by providing a \*.localization.json file in your workshop item:
 
 `MyLocTable.localization.json`:
 
