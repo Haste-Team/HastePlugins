@@ -16,8 +16,8 @@ public class SpeedrunningPlugin
     {
         var go = new GameObject(nameof(SpeedrunningPlugin));
         Object.DontDestroyOnLoad(go);
-        go.AddComponent<SeedQRCode>();
         go.AddComponent<LiveSplitUpdater>();
+        SeedQRCode.Init();
     }
 }
 
@@ -39,50 +39,43 @@ public class LiveSplitUpdater : MonoBehaviour
     }
 }
 
-internal class SeedQRCode : MonoBehaviour
+internal static class SeedQRCode
 {
-    private bool _isTransitioning;
-
-    private void Update()
+    public static void Init()
     {
-        var isTransitioning = UI_TransitionHandler.IsTransitioning;
-        if (isTransitioning != _isTransitioning)
+        On.LevelSelectionHandler.Generate += (orig, self) =>
         {
-            _isTransitioning = isTransitioning;
-            if (isTransitioning && RunHandler.RunData.currentSeed != -1)
-            {
-                GameObject? GetActiveChild()
-                {
-                    foreach (Transform child in UI_TransitionHandler.instance.transform)
-                        if (child.gameObject.activeSelf)
-                            return child.gameObject;
-                    return null;
-                }
+            var ui = GameObject.Find("UI_Gameplay_Minimal");
+            GameObject imgObject = new GameObject("SeedQRCode");
+            Image image = imgObject.AddComponent<Image>();
+            var tex = GetTexture();
+            image.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+            imgObject.transform.SetParent(ui.transform, false);
 
-                var activeChild = GetActiveChild();
-                if (activeChild == null)
-                    return;
+            RectTransform rectTransform = imgObject.GetComponent<RectTransform>();
+            rectTransform.anchorMin = new Vector2(0.92f, 0f);
+            rectTransform.anchorMax = new Vector2(1f, 0f);
+            rectTransform.anchoredPosition = new Vector2(0f, 0f);
+            rectTransform.pivot = new Vector2(1f, 0f);
+            
+            var fit = imgObject.AddComponent<AspectRatioFitter>();
+            fit.aspectMode = AspectRatioFitter.AspectMode.WidthControlsHeight;
+            fit.aspectRatio = tex.width / tex.height;
 
-                Debug.Log("SeedQRCode: enable");
-
-                var texture = GetTexture();
-                var image = activeChild.GetComponent<Image>();
-                image.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
-                image.color = Color.white;
-                image.type = Image.Type.Simple;
-                image.preserveAspect = true;
-            }
-            else
-            {
-                Debug.Log("SeedQRCode: disable");
-            }
-        }
+            orig(self);
+        };
     }
-
     private static Texture2D GetTexture()
     {
         var seed = RunHandler.RunData.currentSeed;
-        var nrOfLevels = RunHandler.config.nrOfLevels;
+        var nrOfLevels = RunHandler.config?.nrOfLevels;
+        if (nrOfLevels is null)
+        {
+            return new Texture2D(1, 1, TextureFormat.ARGB32, false)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+            };
+        }
         var time = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var version = new BuildVersion(Application.version).ToString().Replace("\"", "");
         var rawData = $$"""{"seed":{{seed}},"nrOfLevels":{{nrOfLevels}},"time":{{time}},"ver":"{{version}}"}""";
@@ -98,7 +91,8 @@ internal class SeedQRCode : MonoBehaviour
                 if (y >= seedData.ModuleMatrix.Count || x >= seedData.ModuleMatrix[y].Count)
                     color = Color.white;
                 else
-                    color = seedData.ModuleMatrix[y][x] ? Color.black : Color.white;
+                    color = seedData.ModuleMatrix[y][x] ? Color.clear : Color.white;
+                color.a *= 0.02f;
 
                 // The modules use a bottom-left origin, but the texture uses top-left
                 // We need to flip the texture.
