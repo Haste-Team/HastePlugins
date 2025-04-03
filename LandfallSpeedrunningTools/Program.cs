@@ -2,6 +2,7 @@
 using QRCoder.Core;
 using UnityEngine;
 using UnityEngine.UI;
+using Zorro.Core;
 using Object = UnityEngine.Object;
 
 namespace LandfallSpeedrunningTools;
@@ -48,7 +49,7 @@ internal class SeedQRCode : MonoBehaviour
         if (isTransitioning != _isTransitioning)
         {
             _isTransitioning = isTransitioning;
-            if (isTransitioning)
+            if (isTransitioning && RunHandler.RunData.currentSeed != -1)
             {
                 GameObject? GetActiveChild()
                 {
@@ -80,32 +81,24 @@ internal class SeedQRCode : MonoBehaviour
 
     private static Texture2D GetTexture()
     {
-        var seedData = QRCodeGenerator.GenerateQrCodeNumeric(((uint)RunHandler.RunData.currentSeed).ToString(), QRCodeGenerator.ECCLevel.Q);
-        var nowData = QRCodeGenerator.GenerateQrCodeNumeric(((uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds()).ToString(), QRCodeGenerator.ECCLevel.Q);
-        var height = Mathf.Max(seedData.ModuleMatrix.Count, nowData.ModuleMatrix.Count);
-        var seedWidth = seedData.ModuleMatrix[0].Count;
-        var width = seedWidth + nowData.ModuleMatrix[0].Count;
+        var seed = RunHandler.RunData.currentSeed;
+        var nrOfLevels = RunHandler.config.nrOfLevels;
+        var time = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var version = new BuildVersion(Application.version).ToString().Replace("\"", "");
+        var rawData = $$"""{"seed":{{seed}},"nrOfLevels":{{nrOfLevels}},"time":{{time}},"ver":"{{version}}"}""";
+        var seedData = QRCodeGenerator.GenerateQrCode(rawData, QRCodeGenerator.ECCLevel.Q);
+        var height = seedData.ModuleMatrix.Count;
+        var width = seedData.ModuleMatrix[0].Count;
         var colors = new Color[width * height];
         for (var y = 0; y < height; y++)
         {
             for (var x = 0; x < width; x++)
             {
-                QRCodeData data;
-                var imgX = x;
-                if (imgX > seedWidth)
-                {
-                    imgX -= seedWidth;
-                    data = nowData;
-                }
-                else
-                {
-                    data = seedData;
-                }
                 Color color;
-                if (y >= data.ModuleMatrix.Count || imgX >= data.ModuleMatrix[y].Count)
+                if (y >= seedData.ModuleMatrix.Count || x >= seedData.ModuleMatrix[y].Count)
                     color = Color.white;
                 else
-                    color = data.ModuleMatrix[y][imgX] ? Color.black : Color.white;
+                    color = seedData.ModuleMatrix[y][x] ? Color.black : Color.white;
                 colors[y * width + x] = color;
             }
         }
