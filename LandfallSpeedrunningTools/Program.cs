@@ -99,7 +99,10 @@ internal class SeedQRCode : MonoBehaviour
                     color = Color.white;
                 else
                     color = seedData.ModuleMatrix[y][x] ? Color.black : Color.white;
-                colors[y * width + x] = color;
+
+                // The modules use a bottom-left origin, but the texture uses top-left
+                // We need to flip the texture.
+                colors[(height - 1 - y) * width + x] = color;
             }
         }
         var texture = new Texture2D(width, height, TextureFormat.ARGB32, false)
