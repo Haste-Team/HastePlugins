@@ -1,4 +1,5 @@
 using System.IO.Pipes;
+using System.Net.Sockets;
 using System.Text;
 using UnityEngine;
 
@@ -9,6 +10,7 @@ public abstract class LiveSplit : IDisposable
     protected static readonly UTF8Encoding Encoding = new(false);
     public static LiveSplit? Instance;
 
+    public abstract Task ConnectAsync();
     protected abstract Task Send(byte[] bytes);
 
     public void Split() => Send("startorsplit");
@@ -31,7 +33,7 @@ public class LiveSplitNamedPipe : LiveSplit
 
     public LiveSplitNamedPipe() => _stream = new NamedPipeClientStream(".", "LiveSplit", PipeDirection.InOut, PipeOptions.Asynchronous);
 
-    public async Task ConnectAsync()
+    public override async Task ConnectAsync()
     {
         await _stream.ConnectAsync(1000);
         RecvLoop(_stream);
@@ -61,6 +63,45 @@ public class LiveSplitNamedPipe : LiveSplit
     public override void Dispose()
     {
         _stream.Dispose();
+    }
+}
+
+public class LiveSplitTCP : LiveSplit
+{
+    private readonly TcpClient _client;
+
+    public LiveSplitTCP() => _client = new TcpClient();
+
+    public override async Task ConnectAsync()
+    {
+        await _client.ConnectAsync("localhost", 16834);
+        RecvLoop(_client.GetStream());
+        Debug.Log("LiveSplit client connected");
+    }
+
+    private static async void RecvLoop(Stream stream)
+    {
+        byte[] buf = new byte[1024];
+        while (stream.CanRead)
+        {
+            var count = await stream.ReadAsync(buf, 0, buf.Length);
+            if (count <= 0)
+                break;
+            Debug.Log($"Got data from LiveSplit: {Encoding.GetString(buf, 0, count)}");
+        }
+
+        Debug.Log("LiveSplit stream closed");
+    }
+
+    protected override async Task Send(byte[] arr)
+    {
+        await _client.GetStream().WriteAsync(arr, 0, arr.Length);
+        await _client.GetStream().FlushAsync();
+    }
+
+    public override void Dispose()
+    {
+        _client.Dispose();
     }
 }
 
