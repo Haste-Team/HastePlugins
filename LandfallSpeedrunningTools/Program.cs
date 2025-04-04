@@ -2,6 +2,7 @@
 using QRCoder.Core;
 using UnityEngine;
 using UnityEngine.UI;
+using Zorro.Core;
 using Object = UnityEngine.Object;
 
 namespace LandfallSpeedrunningTools;
@@ -15,8 +16,8 @@ public class SpeedrunningPlugin
     {
         var go = new GameObject(nameof(SpeedrunningPlugin));
         Object.DontDestroyOnLoad(go);
-        go.AddComponent<SeedQRCode>();
         go.AddComponent<LiveSplitUpdater>();
+        SeedQRCode.Init();
     }
 }
 
@@ -38,75 +39,59 @@ public class LiveSplitUpdater : MonoBehaviour
     }
 }
 
-internal class SeedQRCode : MonoBehaviour
+internal static class SeedQRCode
 {
-    private bool _isTransitioning;
-
-    private void Update()
+    public static void Init()
     {
-        var isTransitioning = UI_TransitionHandler.IsTransitioning;
-        if (isTransitioning != _isTransitioning)
+        On.LevelSelectionHandler.Generate += (orig, self) =>
         {
-            _isTransitioning = isTransitioning;
-            if (isTransitioning)
-            {
-                GameObject? GetActiveChild()
-                {
-                    foreach (Transform child in UI_TransitionHandler.instance.transform)
-                        if (child.gameObject.activeSelf)
-                            return child.gameObject;
-                    return null;
-                }
+            var ui = GameObject.Find("UI_Gameplay_Minimal");
+            GameObject imgObject = new GameObject("SeedQRCode");
+            Image image = imgObject.AddComponent<Image>();
+            var tex = GetTexture();
+            image.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+            imgObject.transform.SetParent(ui.transform, false);
 
-                var activeChild = GetActiveChild();
-                if (activeChild == null)
-                    return;
+            RectTransform rectTransform = imgObject.GetComponent<RectTransform>();
+            rectTransform.anchorMin = new Vector2(0.92f, 0f);
+            rectTransform.anchorMax = new Vector2(1f, 0f);
+            rectTransform.anchoredPosition = new Vector2(0f, 0f);
+            rectTransform.pivot = new Vector2(1f, 0f);
 
-                Debug.Log("SeedQRCode: enable");
+            var fit = imgObject.AddComponent<AspectRatioFitter>();
+            fit.aspectMode = AspectRatioFitter.AspectMode.WidthControlsHeight;
+            fit.aspectRatio = tex.width / tex.height;
 
-                var texture = GetTexture();
-                var image = activeChild.GetComponent<Image>();
-                image.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
-                image.color = Color.white;
-                image.type = Image.Type.Simple;
-                image.preserveAspect = true;
-            }
-            else
-            {
-                Debug.Log("SeedQRCode: disable");
-            }
-        }
+            orig(self);
+        };
     }
-
     private static Texture2D GetTexture()
     {
-        var seedData = QRCodeGenerator.GenerateQrCodeNumeric(((uint)RunHandler.RunData.currentSeed).ToString(), QRCodeGenerator.ECCLevel.Q);
-        var nowData = QRCodeGenerator.GenerateQrCodeNumeric(((uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds()).ToString(), QRCodeGenerator.ECCLevel.Q);
-        var height = Mathf.Max(seedData.ModuleMatrix.Count, nowData.ModuleMatrix.Count);
-        var seedWidth = seedData.ModuleMatrix[0].Count;
-        var width = seedWidth + nowData.ModuleMatrix[0].Count;
+        var seed = RunHandler.RunData.currentSeed;
+        var shardID = RunHandler.RunData.shardID;
+        var time = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var version = new BuildVersion(Application.version).ToString().Replace("\"", "");
+        var rawData = $$"""{"seed":{{seed}},"shardID":{{shardID}},"time":{{time}},"ver":"{{version}}"}""";
+
+        var seedData = QRCodeGenerator.GenerateQrCode(rawData, QRCodeGenerator.ECCLevel.Q);
+
+        var height = seedData.ModuleMatrix.Count;
+        var width = seedData.ModuleMatrix[0].Count;
         var colors = new Color[width * height];
         for (var y = 0; y < height; y++)
         {
             for (var x = 0; x < width; x++)
             {
-                QRCodeData data;
-                var imgX = x;
-                if (imgX > seedWidth)
-                {
-                    imgX -= seedWidth;
-                    data = nowData;
-                }
-                else
-                {
-                    data = seedData;
-                }
                 Color color;
-                if (y >= data.ModuleMatrix.Count || imgX >= data.ModuleMatrix[y].Count)
+                if (y >= seedData.ModuleMatrix.Count || x >= seedData.ModuleMatrix[y].Count)
                     color = Color.white;
                 else
-                    color = data.ModuleMatrix[y][imgX] ? Color.black : Color.white;
-                colors[y * width + x] = color;
+                    color = seedData.ModuleMatrix[y][x] ? Color.clear : Color.white;
+                color.a *= 0.02f;
+
+                // The modules use a bottom-left origin, but the texture uses top-left
+                // We need to flip the texture.
+                colors[(height - 1 - y) * width + x] = color;
             }
         }
         var texture = new Texture2D(width, height, TextureFormat.ARGB32, false)
