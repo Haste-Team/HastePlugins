@@ -78,7 +78,7 @@ public class LivesplitterEnabled : EnumSetting<LivesplitterKind>, IExposedSettin
                     }
                     else if (useNamedPipe && e.GetType() == typeof(TimeoutException))
                     {
-                        message = "Make sure LiveSplit is running. If the problem persistes, restart LiveSplit, then try again.";
+                        message = "Make sure LiveSplit is running. If the problem persists, restart LiveSplit, then try again.";
                     }
                     message += "\nTo retry, go to the settings and disable, then re-enable the autosplitter.";
                     Modal.OpenModal(new DefaultHeaderModalOption("Failed to connect to LiveSplit", message), new CloseModalOnKeypress());
