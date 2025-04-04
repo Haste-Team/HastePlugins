@@ -36,53 +36,64 @@ public class FixedSeed : IntSetting, IExposedSetting
 public enum LivesplitterKind
 {
     None,
-    NamedPipe,
+    LiveSplitClassic,
 }
 
 [HasteSetting]
-public class LivesplitterEnabled : BoolSetting, IExposedSetting
+public class LivesplitterEnabled : EnumSetting<LivesplitterKind>, IExposedSetting
 {
     public override async void ApplyValue()
     {
-        if (Value && LiveSplit.Instance is null)
+        switch (Value)
         {
-            var inst = LiveSplit.Instance;
-            LiveSplit.Instance = null;
-            inst?.Dispose();
-            bool useNamedPipe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-            try
-            {
-                LiveSplit client = useNamedPipe ? new LiveSplitNamedPipe() : new LiveSplitTCP();
-                await client.ConnectAsync();
-                LiveSplit.Instance = client;
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-                var message = e.Message;
-                if (!useNamedPipe && e.GetType() == typeof(SocketException))
+            case LivesplitterKind.None:
+                if (LiveSplit.Instance is not null)
                 {
-                    message = "Make sure LiveSplit is running and the TCP Server is enabled!\nRight Click -> Control -> Start TCP Server";
-                } else if (useNamedPipe && e.GetType() == typeof(TimeoutException))
-                {
-                    message = "Make sure LiveSplit is running. If the problem persistes, restart LiveSplit, then try again.";
+                    var inst = LiveSplit.Instance;
+                    LiveSplit.Instance = null;
+                    inst?.Dispose();
                 }
-                message += "\nTo retry, go to the settings and disable, then re-enable the autosplitter.";
-                Modal.OpenModal(new DefaultHeaderModalOption("Failed to connect to LiveSplit", message), new CloseModalOnKeypress());
-            }
-        }
-        else if (!Value && LiveSplit.Instance is not null)
-        {
-            var inst = LiveSplit.Instance;
-            LiveSplit.Instance = null;
-            inst.Dispose();
+                break;
+            case LivesplitterKind.LiveSplitClassic:
+                bool useNamedPipe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+                if (LiveSplit.Instance?.GetType() != (useNamedPipe ? typeof(LiveSplitNamedPipe) : typeof(LiveSplitTCP)))
+                {
+                    var inst = LiveSplit.Instance;
+                    LiveSplit.Instance = null;
+                    inst?.Dispose();
+                }
+                try
+                {
+                    LiveSplit client = useNamedPipe ? new LiveSplitNamedPipe() : new LiveSplitTCP();
+                    await client.ConnectAsync();
+                    LiveSplit.Instance = client;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                    var message = e.Message;
+                    if (!useNamedPipe && e.GetType() == typeof(SocketException))
+                    {
+                        message = "Make sure LiveSplit is running and the TCP Server is enabled!\nRight Click -> Control -> Start TCP Server";
+                    }
+                    else if (useNamedPipe && e.GetType() == typeof(TimeoutException))
+                    {
+                        message = "Make sure LiveSplit is running. If the problem persistes, restart LiveSplit, then try again.";
+                    }
+                    message += "\nTo retry, go to the settings and disable, then re-enable the autosplitter.";
+                    Modal.OpenModal(new DefaultHeaderModalOption("Failed to connect to LiveSplit", message), new CloseModalOnKeypress());
+                }
+                break;
         }
     }
 
-    protected override bool GetDefaultValue() => false;
+    protected override LivesplitterKind GetDefaultValue() => LivesplitterKind.None;
 
-    public override LocalizedString OffString => new UnlocalizedString("Disabled");
-    public override LocalizedString OnString => new UnlocalizedString("Enabled");
+    public override List<LocalizedString> GetLocalizedChoices() =>
+    [
+        new UnlocalizedString("Disabled"),
+        new UnlocalizedString("Enabled")
+    ];
 
     public LocalizedString GetDisplayName() => new UnlocalizedString("Autosplitter for LiveSplit");
     public string GetCategory() => SpeedrunningPlugin.SpeedrunningSetting;
