@@ -53,7 +53,7 @@ internal static class SeedQRCode
             imgObject.transform.SetParent(ui.transform, false);
 
             RectTransform rectTransform = imgObject.GetComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0.92f, 0f);
+            rectTransform.anchorMin = new Vector2(0.86f, 0f);
             rectTransform.anchorMax = new Vector2(1f, 0f);
             rectTransform.anchoredPosition = new Vector2(0f, 0f);
             rectTransform.pivot = new Vector2(1f, 0f);
@@ -73,7 +73,7 @@ internal static class SeedQRCode
         var version = new BuildVersion(Application.version).ToString().Replace("\"", "");
         var rawData = $$"""{"seed":{{seed}},"shardID":{{shardID}},"time":{{time}},"ver":"{{version}}"}""";
 
-        var seedData = QRCodeGenerator.GenerateQrCode(rawData, QRCodeGenerator.ECCLevel.Q);
+        var seedData = QRCodeGenerator.GenerateQrCode(rawData, QRCodeGenerator.ECCLevel.L);
 
         var height = seedData.ModuleMatrix.Count;
         var width = seedData.ModuleMatrix[0].Count;
@@ -87,7 +87,7 @@ internal static class SeedQRCode
                     color = Color.white;
                 else
                     color = seedData.ModuleMatrix[y][x] ? Color.clear : Color.white;
-                color.a *= 0.02f;
+                color.a *= 0.12f;
 
                 // The modules use a bottom-left origin, but the texture uses top-left
                 // We need to flip the texture.
