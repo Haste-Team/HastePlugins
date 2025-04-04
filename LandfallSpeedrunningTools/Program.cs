@@ -57,7 +57,7 @@ internal static class SeedQRCode
             rectTransform.anchorMax = new Vector2(1f, 0f);
             rectTransform.anchoredPosition = new Vector2(0f, 0f);
             rectTransform.pivot = new Vector2(1f, 0f);
-            
+
             var fit = imgObject.AddComponent<AspectRatioFitter>();
             fit.aspectMode = AspectRatioFitter.AspectMode.WidthControlsHeight;
             fit.aspectRatio = tex.width / tex.height;
@@ -68,18 +68,13 @@ internal static class SeedQRCode
     private static Texture2D GetTexture()
     {
         var seed = RunHandler.RunData.currentSeed;
-        var nrOfLevels = RunHandler.config?.nrOfLevels;
-        if (nrOfLevels is null)
-        {
-            return new Texture2D(1, 1, TextureFormat.ARGB32, false)
-            {
-                wrapMode = TextureWrapMode.Clamp,
-            };
-        }
+        var shardID = RunHandler.RunData.shardID;
         var time = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var version = new BuildVersion(Application.version).ToString().Replace("\"", "");
-        var rawData = $$"""{"seed":{{seed}},"nrOfLevels":{{nrOfLevels}},"time":{{time}},"ver":"{{version}}"}""";
+        var rawData = $$"""{"seed":{{seed}},"shardID":{{shardID}},"time":{{time}},"ver":"{{version}}"}""";
+
         var seedData = QRCodeGenerator.GenerateQrCode(rawData, QRCodeGenerator.ECCLevel.Q);
+
         var height = seedData.ModuleMatrix.Count;
         var width = seedData.ModuleMatrix[0].Count;
         var colors = new Color[width * height];
