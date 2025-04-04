@@ -1,4 +1,7 @@
 ﻿using Landfall.Haste;
+using System.Net.Sockets;
+using System.Runtime.InteropServices;
+using UnityEngine;
 using UnityEngine.Localization;
 using Zorro.Settings;
 using Zorro.UI.Modal;
@@ -33,7 +36,7 @@ public class FixedSeed : IntSetting, IExposedSetting
 public enum LivesplitterKind
 {
     None,
-    NamedPipe,
+    LiveSplitClassic,
 }
 
 [HasteSetting]
@@ -48,29 +51,39 @@ public class LivesplitterEnabled : EnumSetting<LivesplitterKind>, IExposedSettin
                 {
                     var inst = LiveSplit.Instance;
                     LiveSplit.Instance = null;
-                    inst.Dispose();
+                    inst?.Dispose();
                 }
                 break;
-            case LivesplitterKind.NamedPipe:
-                if (LiveSplit.Instance is not LiveSplitNamedPipe)
+            case LivesplitterKind.LiveSplitClassic:
+                bool useNamedPipe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+                if (LiveSplit.Instance?.GetType() != (useNamedPipe ? typeof(LiveSplitNamedPipe) : typeof(LiveSplitTCP)))
                 {
                     var inst = LiveSplit.Instance;
                     LiveSplit.Instance = null;
                     inst?.Dispose();
-                    try
+                }
+                try
+                {
+                    LiveSplit client = useNamedPipe ? new LiveSplitNamedPipe() : new LiveSplitTCP();
+                    await client.ConnectAsync();
+                    LiveSplit.Instance = client;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                    var message = e.Message;
+                    if (!useNamedPipe && e.GetType() == typeof(SocketException))
                     {
-                        var np = new LiveSplitNamedPipe();
-                        await np.ConnectAsync();
-                        LiveSplit.Instance = np;
+                        message = "Make sure LiveSplit is running and the TCP Server is enabled!\nRight Click -> Control -> Start TCP Server";
                     }
-                    catch (Exception e)
+                    else if (useNamedPipe && e.GetType() == typeof(TimeoutException))
                     {
-                        Modal.OpenModal(new DefaultHeaderModalOption("Failed to start live split client", e.ToString()), new CloseModalOnKeypress());
+                        message = "Make sure LiveSplit is running. If the problem persists, restart LiveSplit, then try again.";
                     }
+                    message += "\nTo retry, go to the settings and disable, then re-enable the autosplitter.";
+                    Modal.OpenModal(new DefaultHeaderModalOption("Failed to connect to LiveSplit", message), new CloseModalOnKeypress());
                 }
                 break;
-            default:
-                throw new ArgumentOutOfRangeException();
         }
     }
 
@@ -78,7 +91,7 @@ public class LivesplitterEnabled : EnumSetting<LivesplitterKind>, IExposedSettin
 
     public override List<LocalizedString> GetLocalizedChoices() =>
     [
-        new UnlocalizedString("Off"),
+        new UnlocalizedString("Disabled"),
         new UnlocalizedString("Enabled")
     ];
 
