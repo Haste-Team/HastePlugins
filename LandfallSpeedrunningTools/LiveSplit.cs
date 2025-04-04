@@ -68,13 +68,14 @@ public class LiveSplitNamedPipe : LiveSplit
 
 public class LiveSplitTCP : LiveSplit
 {
+    private static readonly int LivesplitDefaultPort = 16834;
     private readonly TcpClient _client;
 
     public LiveSplitTCP() => _client = new TcpClient();
 
     public override async Task ConnectAsync()
     {
-        await _client.ConnectAsync("localhost", 16834);
+        await _client.ConnectAsync("localhost", LivesplitDefaultPort);
         RecvLoop(_client.GetStream());
         Debug.Log("LiveSplit client connected");
     }
