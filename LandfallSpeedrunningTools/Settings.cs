@@ -157,6 +157,18 @@ public class SplitOnBossDeath : SplitOnSetting
 }
 
 [HasteSetting]
+public class SplitOnEndBossWin : SplitOnSetting
+{
+    public override void ApplyValue()
+    {
+        if (Value)
+            GM_API.EndBossWin += Trigger;
+        else
+            GM_API.EndBossWin -= Trigger;
+    }
+}
+
+[HasteSetting]
 public class SplitOnPlayNode : SplitOnSetting
 {
     public override void ApplyValue()
