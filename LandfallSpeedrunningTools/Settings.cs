@@ -11,20 +11,31 @@ namespace LandfallSpeedrunningTools;
 [HasteSetting]
 public class FixedSeed : IntSetting, IExposedSetting
 {
-    public override void ApplyValue()
+    static FixedSeed()
     {
-        if (Value == 0)
+        On.WorldShard.PlayLevel_int += (orig, self, seed) =>
         {
-            RunHandler.SeedGenerator -= GetSeed;
-        }
-        else
-        {
-            RunHandler.SeedGenerator -= GetSeed;
-            RunHandler.SeedGenerator += GetSeed;
-        }
+            if (!GameHandler.Instance)
+                return;
+            var setting = GameHandler.Instance.SettingsHandler.GetSetting<FixedSeed>();
+            if (setting == null)
+                return;
+            var value = setting.Value;
+            if (value == 0)
+                orig(self, seed);
+            else
+            {
+                // ignore the provided seed and use our own
+                // offset the seed by shardID to make every shard have different base seeds
+                // (and multiply by 100 so that it's not just shifting level ID seeds by 1)
+                orig(self, value + self.shardID * 100);
+            }
+        };
     }
 
-    private int GetSeed() => Value;
+    public override void ApplyValue()
+    {
+    }
 
     protected override int GetDefaultValue() => 0;
 
