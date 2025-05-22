@@ -149,10 +149,12 @@ public class SplitOnDeath : SplitOnSetting
     public override void ApplyValue()
     {
         if (Value)
-            GM_API.Died += Trigger;
+            GM_API.Died += TriggerObj;
         else
-            GM_API.Died -= Trigger;
+            GM_API.Died -= TriggerObj;
     }
+
+    private static void TriggerObj(Player obj) => Trigger();
 }
 
 [HasteSetting]
@@ -192,7 +194,7 @@ public class SplitOnPlayNode : SplitOnSetting
 
     private static void Trigger(LevelSelectionNode.Data obj)
     {
-        if (obj.Type != LevelSelectionNode.NodeType.Boss)
+        if (obj.type != LevelSelectionNode.NodeType.Boss)
             Trigger();
     }
 }
@@ -210,7 +212,7 @@ public class SplitOnPlayBossNode : SplitOnSetting
 
     private static void Trigger(LevelSelectionNode.Data obj)
     {
-        if (obj.Type == LevelSelectionNode.NodeType.Boss)
+        if (obj.type == LevelSelectionNode.NodeType.Boss)
             Trigger();
     }
 }

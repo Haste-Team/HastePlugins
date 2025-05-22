@@ -60,11 +60,12 @@ internal static class SeedQRCode
 
             var fit = imgObject.AddComponent<AspectRatioFitter>();
             fit.aspectMode = AspectRatioFitter.AspectMode.WidthControlsHeight;
-            fit.aspectRatio = tex.width / tex.height;
+            fit.aspectRatio = (float)tex.width / tex.height;
 
             orig(self);
         };
     }
+
     private static Texture2D GetTexture()
     {
         var seed = RunHandler.RunData.currentSeed;
