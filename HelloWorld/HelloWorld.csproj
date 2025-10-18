@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk" InitialTargets="RemoveBackports">
 
     <PropertyGroup>
         <TargetFramework>netstandard2.1</TargetFramework>
@@ -25,5 +25,15 @@
         <!-- Harmony -->
         <!-- <Reference Include="C:\Program Files (x86)\Steam\steamapps\workshop\content\1796470\3385184093\*.dll" Private="false"/> -->
     </ItemGroup>
+
+    <!-- MonoMod.Backports.dll is required for MonoMod to work, but adding it as a reference causes issues,
+     as it contains a lot of types already included in Unity's standard library mscorlib.dll. Exclude it
+     from the globbed references using this snippit. (make sure to add InitialTargets="RemoveBackports" to
+     the <Project> tag at the top of this file) -->
+    <Target Name="RemoveBackports">
+        <ItemGroup>
+            <Reference Remove="@(Reference)" Condition="$([System.String]::new('%(Reference.Filename)').Contains('Backports'))"/>
+        </ItemGroup>
+    </Target>
 
 </Project>

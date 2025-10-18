@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk" InitialTargets="RemoveBackports">
 
     <PropertyGroup>
         <TargetFramework>netstandard2.1</TargetFramework>
@@ -14,5 +14,11 @@
     <ItemGroup>
         <Reference Include="$(HasteDlls)" Private="false"/>
     </ItemGroup>
+
+    <Target Name="RemoveBackports">
+        <ItemGroup>
+            <Reference Remove="@(Reference)" Condition="$([System.String]::new('%(Reference.Filename)').Contains('Backports'))"/>
+        </ItemGroup>
+    </Target>
 
 </Project>
